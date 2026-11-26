@@ -1,0 +1,1202 @@
+---
+title: "DASHBOARD - DISPONIBILIDAD FEBRERO"
+format: revealjs
+---
+
+## INGRESOS POR BANCO (CUENTAS EN \$)
+
+```{r}
+#| label: load-packages
+#| echo: false
+#| message: false
+#| warning: false
+
+library(readxl)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(purrr)
+library(tibble)
+library(scales)
+library(plotly)
+
+ruta_archivo <- "C:\\Users\\egutierrezr\\Documents\\dashboard_R\\dashboard_quarto\\Disponibilidad_Bancaria_Febrero_2026.xlsx"
+
+
+mapa_archivo_ingresos <- tribble(
+  ~archivo,                                              ~hoja,       ~celda,   ~Banco,     ~Tipo,
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",      "E5",      "CITIBANK", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E87",      "MEBANK_P", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E169",       "MC_VZLA", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E251",   "MS_EXTERIOR", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E333",     "MBANK_SYR", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E415",     "FACE_BANK", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E497",     "PROV_VZLA", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E579",          "EBNA", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E661",      "MB_SUIZA", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E743", "BBVA_OVERSEAS", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E825",       "AMERANT", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E907",       "BANESCO", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E989",         "ZINLI", "ingreso_general",
+)
+
+
+extraer_con_mapa <- function(archivo, hoja, celda) {
+  tryCatch({
+    tbl <- read_xlsx(ruta_archivo, sheet = hoja, range = celda, col_names = FALSE)
+    suppressWarnings(as.numeric(tbl[[1, 1]]))
+  }, error = function(e) {
+    message("Error en hoja '", hoja, "' celda '", celda, "': ", conditionMessage(e))
+    NA_real_
+  })
+}
+
+ingresos <- mapa_archivo_ingresos %>%
+  mutate(ingresos_totales = pmap_dbl(list(archivo, hoja, celda), extraer_con_mapa))
+
+
+
+###### GRAFICA #######
+
+
+df_plot_ingresos <- ingresos %>%
+  filter(!is.na(ingresos_totales)) %>%
+  mutate(
+    pct_total = ingresos_totales / sum(ingresos_totales),
+    Banco_ord = reorder(Banco, ingresos_totales),
+    top_banco = factor(
+      if_else(
+        ingresos_totales >= sort(ingresos_totales, decreasing = TRUE)[min(3, n())],
+        "Top 3",
+        "Resto"
+      ),
+      levels = c("Top 3", "Resto")
+    ),
+    etiqueta_pct = percent(pct_total, accuracy = 0.1),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>Ingreso:</b> ", comma(ingresos_totales, accuracy = 0.01),
+      "<br><b>Participación:</b> ", etiqueta_pct,
+      "<br><b>Tipo:</b> ", Tipo
+    )
+  )
+
+p_ingresos <- ggplot(
+  df_plot_ingresos,
+  aes(x = Banco_ord, y = ingresos_totales, fill = top_banco, text = texto_hover)
+) +
+  geom_col(width = 0.7, show.legend = FALSE) +
+  geom_text(
+    aes(label = etiqueta_pct, y = ingresos_totales),
+    hjust = -0.15,
+    size = 3.8,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(values = c("Top 3" = "#1565C0", "Resto" = "#B0BEC5")) +
+  guides(fill = "none") +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.2))
+  ) +
+  labs(
+    title = "Ingresos por banco — Febrero 2026",
+    subtitle = "Porcentaje de participación al lado de cada barra | Pasa el cursor para más detalle",
+    x = NULL,
+    y = "Monto (ingreso general)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+ggplotly(p_ingresos, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+
+
+
+
+```
+
+## EGRESOS POR BANCO (CUENTAS EN \$)
+
+```{r}
+
+#| label: load-packages
+#| echo: false
+#| message: false
+#| warning: false
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+########################################### EGRESOS
+
+
+
+
+mapa_archivo_egresos <- tribble(
+  ~archivo,                                              ~hoja,       ~celda,   ~Banco,     ~Tipo,
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",      "E25",      "CITIBANK", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E107",      "MEBANK_P", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E189",       "MC_VZLA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E271",   "MS_EXTERIOR", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E353",     "MBANK_SYR", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E435",     "FACE_BANK", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E517",     "PROV_VZLA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E599",          "EBNA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E681",      "MB_SUIZA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E763", "BBVA_OVERSEAS", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E845",       "AMERANT", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",     "E927",       "BANESCO", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS",    "E1009",         "ZINLI", "egreso_general",
+)
+
+
+extraer_con_mapa <- function(archivo, hoja, celda) {
+  tryCatch({
+    tbl <- read_xlsx(ruta_archivo, sheet = hoja, range = celda, col_names = FALSE)
+    suppressWarnings(as.numeric(tbl[[1, 1]]))
+  }, error = function(e) {
+    message("Error en hoja '", hoja, "' celda '", celda, "': ", conditionMessage(e))
+    NA_real_
+  })
+}
+
+egresos <- mapa_archivo_egresos %>%
+  mutate(egresos_totales = pmap_dbl(list(archivo, hoja, celda), extraer_con_mapa))
+
+
+
+
+###### GRAFICA #######
+
+
+
+
+df_plot_egresos <- egresos %>%
+  filter(!is.na(egresos_totales)) %>%
+  mutate(
+    pct_total = egresos_totales / sum(egresos_totales),
+    Banco_ord = reorder(Banco, egresos_totales),
+    top_banco = factor(
+      if_else(
+        egresos_totales >= sort(egresos_totales, decreasing = TRUE)[min(3, n())],
+        "Top 3",
+        "Resto"
+      ),
+      levels = c("Top 3", "Resto")
+    ),
+    etiqueta_pct = percent(pct_total, accuracy = 0.1),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>egreso:</b> ", comma(egresos_totales, accuracy = 0.01),
+      "<br><b>Participación:</b> ", etiqueta_pct,
+      "<br><b>Tipo:</b> ", Tipo
+    )
+  )
+
+p_egresos <- ggplot(
+  df_plot_egresos,
+  aes(x = Banco_ord, y = egresos_totales, fill = top_banco, text = texto_hover)
+) +
+  geom_col(width = 0.7, show.legend = FALSE) +
+  geom_text(
+    aes(label = etiqueta_pct, y = egresos_totales),
+    hjust = -0.15,
+    size = 3.8,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(values = c("Top 3" = "red", "Resto" = "#B0BEC5")) +
+  guides(fill = "none") +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.2))
+  ) +
+  labs(
+    title = "Egresos por banco — Febrero 2026",
+    subtitle = "Porcentaje de participación al lado de cada barra | Pasa el cursor para más detalle",
+    x = NULL,
+    y = "Monto (egreso general)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+ggplotly(p_egresos, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+
+
+
+
+```
+
+## INGRESOS POR BANCO vs. EGRESOS POR BANCO (CUENTAS EN \$)
+
+::: columns
+::: {.column width="48%"}
+```{r}
+
+#| label: paneles-separados
+#| echo: false
+#| message: false
+#| warning: false
+
+ing_prep <- ingresos %>%
+  filter(!is.na(ingresos_totales)) %>%
+  transmute(
+    Banco,
+    Tipo = "Ingreso",
+    monto = ingresos_totales
+  )
+
+egr_prep <- egresos %>%
+  filter(!is.na(egresos_totales)) %>%
+  transmute(
+    Banco,
+    Tipo = "Egreso",
+    monto = egresos_totales
+  )
+
+orden_bancos_panel <- ing_prep %>%
+  group_by(Banco) %>%
+  summarise(total_ing = sum(monto), .groups = "drop") %>%
+  arrange(total_ing) %>%
+  pull(Banco)
+
+crear_panel_plotly <- function(df_tipo, titulo_panel, color_top) {
+  df_panel <- df_tipo %>%
+    mutate(
+      pct_total = monto / sum(monto),
+      Banco_ord = factor(Banco, levels = orden_bancos_panel),
+      top_banco = factor(
+        if_else(
+          monto >= sort(monto, decreasing = TRUE)[min(3, n())],
+          "Top 3",
+          "Resto"
+        ),
+        levels = c("Top 3", "Resto")
+      ),
+      etiqueta_pct = percent(pct_total, accuracy = 0.1),
+      texto_hover = paste0(
+        "<b>Banco:</b> ", Banco,
+        "<br><b>", Tipo, ":</b> ", comma(monto, accuracy = 0.01),
+        "<br><b>Participación:</b> ", etiqueta_pct
+      )
+    )
+
+  p <- ggplot(
+    df_panel,
+    aes(x = Banco_ord, y = monto, fill = top_banco, text = texto_hover)
+  ) +
+    geom_col(width = 0.7, show.legend = FALSE) +
+    geom_text(
+      aes(label = etiqueta_pct, y = monto),
+      hjust = -0.15,
+      size = 3.2,
+      fontface = "bold",
+      color = "#000000",
+      hoverinfo = "none"
+    ) +
+    coord_flip(clip = "off") +
+    scale_fill_manual(values = setNames(c(color_top, "#B0BEC5"), c("Top 3", "Resto"))) +
+    guides(fill = "none") +
+    scale_y_continuous(
+      labels = comma,
+      expand = expansion(mult = c(0, 0.25))
+    ) +
+    labs(
+      title = titulo_panel,
+      x = NULL,
+      y = "Monto"
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(
+      panel.grid.major.y = element_blank(),
+      plot.margin = margin(10, 30, 10, 10)
+    )
+
+  ggplotly(p, tooltip = "text")
+}
+
+fig_ing <- crear_panel_plotly(ing_prep, "Ingresos", "#1565C0")
+fig_egr <- crear_panel_plotly(egr_prep, "Egresos", "#D32F2F")
+
+subplot(
+  fig_ing,
+  fig_egr,
+  nrows = 1,
+  shareY = TRUE,
+  titleX = TRUE,
+  margin = 0.06
+) %>%
+  layout(
+    title = list(text = "Ingresos por banco", font = list(size = 14)),
+    hoverlabel = list(align = "left")
+  )
+```
+:::
+
+::: {.column width="52%"}
+```{r}
+#| label: grafico-combinado
+#| echo: false
+#| message: false
+#| warning: false
+
+df_ambos <- bind_rows(
+  ingresos %>%
+    filter(!is.na(ingresos_totales)) %>%
+    transmute(Banco, Tipo = "Ingreso", monto = ingresos_totales),
+  egresos %>%
+    filter(!is.na(egresos_totales)) %>%
+    transmute(Banco, Tipo = "Egreso", monto = egresos_totales)
+) %>%
+  group_by(Tipo) %>%
+  mutate(
+    pct_tipo = monto / sum(monto),
+    etiqueta_pct = percent(pct_tipo, accuracy = 0.1)
+  ) %>%
+  ungroup()
+
+orden_bancos_comp <- df_ambos %>%
+  filter(Tipo == "Ingreso") %>%
+  arrange(monto) %>%
+  pull(Banco)
+
+df_ambos <- df_ambos %>%
+  mutate(
+    Banco_ord = factor(Banco, levels = orden_bancos_comp),
+    Tipo = factor(Tipo, levels = c("Ingreso", "Egreso")),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>", Tipo, ":</b> ", comma(monto, accuracy = 0.01),
+      "<br><b>Participación en ", Tipo, "s:</b> ", etiqueta_pct
+    )
+  )
+
+p_comp <- ggplot(
+  df_ambos,
+  aes(x = Banco_ord, y = monto, fill = Tipo, text = texto_hover)
+) +
+  geom_col(
+    position = position_dodge(width = 0.78),
+    width = 0.72
+  ) +
+  geom_text(
+    aes(label = etiqueta_pct, group = Tipo),
+    position = position_dodge(width = 0.78),
+    hjust = -0.15,
+    size = 3.2,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(
+    values = c("Ingreso" = "#1565C0", "Egreso" = "#D32F2F"),
+    labels = c("Ingreso" = "Ingresos", "Egreso" = "Egresos")
+  ) +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.25))
+  ) +
+  labs(
+    title = "Gráfico combinado",
+    x = NULL,
+    y = "Monto",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    legend.position = "top",
+    plot.margin = margin(10, 30, 10, 10)
+  )
+
+ggplotly(p_comp, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+```
+:::
+:::
+
+## INGRESOS POR BANCO vs. EGRESOS POR BANCO (CUENTAS EN Bs/\$)
+
+::: columns
+::: {.column width="50%"}
+```{r}
+
+#| echo: false
+#| message: false
+#| warning: false
+
+
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+########################################### INGRESOS cuenta Bs_$
+
+
+
+mapa_archivo_ingresos_Bs_dolar <- tribble(
+  ~archivo,                                              ~hoja,       ~celda,   ~Banco,     ~Tipo,
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",      "E7",      "MERCANTIL", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E90",        "BANESCO", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E173",     "PROVINCIAL", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E256",      "VENEZUELA", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E339",      "BANCARIBE", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E422",       "EXTERIOR", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E505",     "VENEZOLANO", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E588",         "ACTIVO", "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E671",   "BICENTENARIO",  "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E754",      "BANCAMIGA",  "ingreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",    "E836",       "BANPLUS",  "ingreso_general",
+)
+
+
+extraer_con_mapa <- function(archivo, hoja, celda) {
+  tryCatch({
+    tbl <- read_xlsx(ruta_archivo, sheet = hoja, range = celda, col_names = FALSE)
+    suppressWarnings(as.numeric(tbl[[1, 1]]))
+  }, error = function(e) {
+    message("Error en hoja '", hoja, "' celda '", celda, "': ", conditionMessage(e))
+    NA_real_
+  })
+}
+
+ingresos_Bs_dolar <- mapa_archivo_ingresos_Bs_dolar %>%
+  mutate(ingresos_totales = pmap_dbl(list(archivo, hoja, celda), extraer_con_mapa))
+
+
+
+
+###### GRAFICA #######
+
+
+df_plot_ingresos_bs_dolar <- ingresos_Bs_dolar %>%
+  filter(!is.na(ingresos_totales)) %>%
+  mutate(
+    pct_total = ingresos_totales / sum(ingresos_totales),
+    Banco_ord = reorder(Banco, ingresos_totales),
+    top_banco = factor(
+      if_else(
+        ingresos_totales >= sort(ingresos_totales, decreasing = TRUE)[min(3, n())],
+        "Top 3",
+        "Resto"
+      ),
+      levels = c("Top 3", "Resto")
+    ),
+    etiqueta_pct = percent(pct_total, accuracy = 0.1),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>Ingreso:</b> ", comma(ingresos_totales, accuracy = 0.01),
+      "<br><b>Participación:</b> ", etiqueta_pct,
+      "<br><b>Tipo:</b> ", Tipo
+    )
+  )
+
+p_ingresos <- ggplot(
+  df_plot_ingresos_bs_dolar,
+  aes(x = Banco_ord, y = ingresos_totales, fill = top_banco, text = texto_hover)
+) +
+  geom_col(width = 0.7, show.legend = FALSE) +
+  geom_text(
+    aes(label = etiqueta_pct, y = ingresos_totales),
+    hjust = -0.15,
+    size = 3.8,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(values = c("Top 3" = "#1565C0", "Resto" = "#B0BEC5")) +
+  guides(fill = "none") +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.2))
+  ) +
+  labs(
+    title = "Ingresos por banco Bs/$ — Febrero 2026",
+    subtitle = "Porcentaje de participación al lado de cada barra | Pasa el cursor para más detalle",
+    x = NULL,
+    y = "Monto (ingreso general)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+ggplotly(p_ingresos, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+
+
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+
+
+#| echo: false
+#| message: false
+#| warning: false
+
+
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+########################################### EGRESOS cuenta Bs_$
+
+
+
+
+mapa_archivo_egresos_Bs_dolar <- tribble(
+  ~archivo,                                              ~hoja,       ~celda,   ~Banco,     ~Tipo,
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",      "E27",      "MERCANTIL", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E110",        "BANESCO", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E193",     "PROVINCIAL", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E276",      "VENEZUELA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E359",      "BANCARIBE", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E442",       "EXTERIOR", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E525",     "VENEZOLANO", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E608",         "ACTIVO", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E691",   "BICENTENARIO", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E774",      "BANCAMIGA", "egreso_general",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_Bs_$",     "E857",       "BANPLUS",  "egreso_general",
+)
+
+
+extraer_con_mapa <- function(archivo, hoja, celda) {
+  tryCatch({
+    tbl <- read_xlsx(ruta_archivo, sheet = hoja, range = celda, col_names = FALSE)
+    suppressWarnings(as.numeric(tbl[[1, 1]]))
+  }, error = function(e) {
+    message("Error en hoja '", hoja, "' celda '", celda, "': ", conditionMessage(e))
+    NA_real_
+  })
+}
+
+egresos_bs_dolar <- mapa_archivo_egresos_Bs_dolar %>%
+  mutate(egresos_totales = pmap_dbl(list(archivo, hoja, celda), extraer_con_mapa))
+
+
+
+
+###### GRAFICA #######
+
+
+
+
+df_plot_egresos_bs_dolar <- egresos_bs_dolar %>%
+  filter(!is.na(egresos_totales)) %>%
+  mutate(
+    pct_total = egresos_totales / sum(egresos_totales),
+    Banco_ord = reorder(Banco, egresos_totales),
+    top_banco = factor(
+      if_else(
+        egresos_totales >= sort(egresos_totales, decreasing = TRUE)[min(3, n())],
+        "Top 3",
+        "Resto"
+      ),
+      levels = c("Top 3", "Resto")
+    ),
+    etiqueta_pct = percent(pct_total, accuracy = 0.1),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>egreso:</b> ", comma(egresos_totales, accuracy = 0.01),
+      "<br><b>Participación:</b> ", etiqueta_pct,
+      "<br><b>Tipo:</b> ", Tipo
+    )
+  )
+
+p_egresos_bs_dolar <- ggplot(
+  df_plot_egresos_bs_dolar,
+  aes(x = Banco_ord, y = egresos_totales, fill = top_banco, text = texto_hover)
+) +
+  geom_col(width = 0.7, show.legend = FALSE) +
+  geom_text(
+    aes(label = etiqueta_pct, y = egresos_totales),
+    hjust = -0.15,
+    size = 3.8,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(values = c("Top 3" = "red", "Resto" = "#B0BEC5")) +
+  guides(fill = "none") +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.2))
+  ) +
+  labs(
+    title = "Egresos por banco Bs/$ — Febrero 2026",
+    subtitle = "Porcentaje de participación al lado de cada barra | Pasa el cursor para más detalle",
+    x = NULL,
+    y = "Monto (egreso general)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+ggplotly(p_egresos_bs_dolar, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+
+
+```
+:::
+:::
+
+## INGRESOS POR BANCO vs. EGRESOS POR BANCO COMBINADA (CUENTAS EN Bs/\$)
+
+```{r}
+
+#| echo: false
+#| message: false
+#| warning: false
+
+
+######## grafico combinado
+
+df_ambos_bs_dolar <- bind_rows(
+  ingresos_Bs_dolar %>%
+    filter(!is.na(ingresos_totales)) %>%
+    transmute(Banco, Tipo = "Ingreso", monto = ingresos_totales),
+  egresos_bs_dolar %>%
+    filter(!is.na(egresos_totales)) %>%
+    transmute(Banco, Tipo = "Egreso", monto = egresos_totales)
+) %>%
+  group_by(Tipo) %>%
+  mutate(
+    pct_tipo = monto / sum(monto),
+    etiqueta_pct = percent(pct_tipo, accuracy = 0.1)
+  ) %>%
+  ungroup()
+
+orden_bancos_bs_dolar <- df_ambos_bs_dolar %>%
+  filter(Tipo == "Ingreso") %>%
+  arrange(monto) %>%
+  pull(Banco)
+
+df_ambos_bs_dolar <- df_ambos_bs_dolar %>%
+  mutate(
+    Banco_ord = factor(Banco, levels = orden_bancos_bs_dolar),
+    Tipo = factor(Tipo, levels = c("Ingreso", "Egreso")),
+    texto_hover = paste0(
+      "<b>Banco:</b> ", Banco,
+      "<br><b>", Tipo, ":</b> ", comma(monto, accuracy = 0.01),
+      "<br><b>Participación en ", Tipo, "s:</b> ", etiqueta_pct
+    )
+  )
+
+p_comp_bs_dolar <- ggplot(
+  df_ambos_bs_dolar,
+  aes(x = Banco_ord, y = monto, fill = Tipo, text = texto_hover)
+) +
+  geom_col(
+    position = position_dodge(width = 0.78),
+    width = 0.72
+  ) +
+  geom_text(
+    aes(label = etiqueta_pct, group = Tipo),
+    position = position_dodge(width = 0.78),
+    hjust = -0.15,
+    size = 3.5,
+    fontface = "bold",
+    color = "#000000",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(
+    values = c("Ingreso" = "#1565C0", "Egreso" = "#D32F2F"),
+    labels = c("Ingreso" = "Ingresos", "Egreso" = "Egresos")
+  ) +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.22))
+  ) +
+  labs(
+    title = "Ingresos vs. Egresos por banco Bs/$ — Febrero 2026",
+    subtitle = "Comparativa directa por banco y % de participación de cada rubro",
+    x = NULL,
+    y = "Monto",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    legend.position = "top",
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+ggplotly(p_comp_bs_dolar, tooltip = "text") %>%
+  layout(hoverlabel = list(align = "left"))
+
+
+
+
+```
+
+## CONSOLIDADOS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#########################################################################################################################################################
+########################################### BANCOS CONSOLIDADO
+
+
+mapa_consolidado <- tribble(
+  ~archivo,                                                   ~hoja,                 ~celda,  ~Bloque,        ~Rubro,    ~Concepto,
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E5",    "CONSOLIDADO",  "Ingreso", "Total Ingresos Generales",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E25",   "CONSOLIDADO",  "Egreso",  "Total Egresos Generales",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E87",   "BANCOS",       "Ingreso", "Total Ingresos Generales",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E107",  "BANCOS",       "Egreso",  "Total Egresos Generales",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E170",  "BANCOS_Bs_$",  "Ingreso", "Total Ingresos Generales",
+  "Disponibilidad_Bancaria_Febrero_2026.xlsx", "BANCOS_CONSOLIDADO", "E190",  "BANCOS_Bs_$",  "Egreso",  "Total Egresos Generales"
+)
+
+extraer_con_mapa <- function(archivo, hoja, celda) {
+  tryCatch({
+    tbl <- read_xlsx(ruta_archivo, sheet = hoja, range = celda, col_names = FALSE)
+    suppressWarnings(as.numeric(tbl[[1, 1]]))
+  }, error = function(e) {
+    message("Error en hoja '", hoja, "' celda '", celda, "': ", conditionMessage(e))
+    NA_real_
+  })
+}
+
+df_consolidado <- mapa_consolidado %>%
+  mutate(monto = pmap_dbl(list(archivo, hoja, celda), extraer_con_mapa))
+
+
+
+
+
+
+
+
+
+
+# 1. Calcular Ingresos, Egresos y Saldo Neto (Ingresos - Egresos) por bloque
+df_resumen <- df_consolidado %>%
+  filter(Bloque %in% c("CONSOLIDADO", "BANCOS", "BANCOS_Bs_$"), !is.na(monto)) %>%
+  select(Bloque, Rubro, monto) %>%
+  pivot_wider(names_from = Rubro, values_from = monto) %>%
+  mutate(
+    saldo_neto = Ingreso - Egreso,
+    estado_neto = if_else(saldo_neto >= 0, "Superávit / Positivo", "Déficit / Negativo"),
+    hover_neto = paste0(
+      "<b>Bloque:</b> ", Bloque,
+      "<br><b>Ingresos:</b> ", comma(Ingreso, accuracy = 0.01),
+      "<br><b>Egresos:</b> ", comma(Egreso, accuracy = 0.01),
+      "<br><b>Saldo Neto (Ing - Egr):</b> ",
+      if_else(saldo_neto >= 0, "+", ""), comma(saldo_neto, accuracy = 0.01)
+    )
+  )
+
+# Tablas para tortas (BANCOS_Bs_$ vs BANCOS)
+df_ing_torta <- df_resumen %>%
+  filter(Bloque %in% c("BANCOS", "BANCOS_Bs_$")) %>%
+  mutate(
+    pct = Ingreso / sum(Ingreso),
+    hover_torta = paste0(
+      "<b>Bloque:</b> ", Bloque,
+      "<br><b>Ingresos:</b> ", comma(Ingreso, accuracy = 0.01),
+      "<br><b>Participación:</b> ", percent(pct, accuracy = 0.1)
+    )
+  )
+
+df_egr_torta <- df_resumen %>%
+  filter(Bloque %in% c("BANCOS", "BANCOS_Bs_$")) %>%
+  mutate(
+    pct = Egreso / sum(Egreso),
+    hover_torta = paste0(
+      "<b>Bloque:</b> ", Bloque,
+      "<br><b>Egresos:</b> ", comma(Egreso, accuracy = 0.01),
+      "<br><b>Participación:</b> ", percent(pct, accuracy = 0.1)
+    )
+  )
+
+total_ing <- df_resumen$Ingreso[df_resumen$Bloque == "CONSOLIDADO"]
+total_egr <- df_resumen$Egreso[df_resumen$Bloque == "CONSOLIDADO"]
+
+# 2. Gráfico de barras del Saldo Neto (Ingresos - Egresos)
+df_neto_plot <- df_resumen %>%
+  mutate(
+    Bloque_ord = factor(Bloque, levels = c("BANCOS", "BANCOS_Bs_$", "CONSOLIDADO")),
+    etiqueta_neto = paste0(if_else(saldo_neto >= 0, "+", ""), comma(saldo_neto, accuracy = 0.01))
+  )
+
+p_neto <- ggplot(
+  df_neto_plot,
+  aes(x = Bloque_ord, y = saldo_neto, fill = estado_neto, text = hover_neto)
+) +
+  geom_col(width = 0.55, show.legend = FALSE) +
+  geom_hline(yintercept = 0, color = "#37474F", linewidth = 0.8) +
+  geom_text(
+    aes(
+      label = etiqueta_neto,
+      hjust = if_else(saldo_neto >= 0, -0.1, 1.1)
+    ),
+    size = 3.6,
+    fontface = "bold",
+    color = "#111111",
+    hoverinfo = "none"
+  ) +
+  coord_flip(clip = "off") +
+  scale_fill_manual(
+    values = c("Superávit / Positivo" = "#2E7D32", "Déficit / Negativo" = "#C62828")
+  ) +
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0.25, 0.25))
+  ) +
+  labs(
+    title = "Saldo Neto (Ingresos - Egresos)",
+    x = NULL,
+    y = "Monto Neto"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(10, 35, 10, 10)
+  )
+
+fig_neto <- ggplotly(p_neto, tooltip = "text")
+
+# 3. Tortas con efecto 3D (base desplazada + cara superior)
+fig_3d_tortas <- plot_ly() %>%
+  # --- INGRESOS: base 3D ---
+  add_pie(
+    data = df_ing_torta,
+    labels = ~Bloque,
+    values = ~Ingreso,
+    domain = list(x = c(0.0, 0.30), y = c(0.12, 0.82)),
+    hole = 0.42,
+    sort = FALSE,
+    textinfo = "none",
+    hoverinfo = "skip",
+    showlegend = FALSE,
+    marker = list(colors = c("#0D47A1", "#64B5F6"), line = list(color = "#0D47A1", width = 1))
+  ) %>%
+  # --- INGRESOS: cara superior ---
+  add_pie(
+    data = df_ing_torta,
+    labels = ~Bloque,
+    values = ~Ingreso,
+    name = "Ingresos",
+    domain = list(x = c(0.0, 0.30), y = c(0.18, 0.88)),
+    hole = 0.42,
+    sort = FALSE,
+    textinfo = "label+percent",
+    textposition = "inside",
+    insidetextfont = list(color = "#111111", size = 12),
+    hovertext = ~hover_torta,
+    hoverinfo = "text",
+    showlegend = FALSE,
+    marker = list(colors = c("#1565C0", "#90CAF9"), line = list(color = "#FFFFFF", width = 2))
+  ) %>%
+  # --- EGRESOS: base 3D ---
+  add_pie(
+    data = df_egr_torta,
+    labels = ~Bloque,
+    values = ~Egreso,
+    domain = list(x = c(0.34, 0.64), y = c(0.12, 0.82)),
+    hole = 0.42,
+    sort = FALSE,
+    textinfo = "none",
+    hoverinfo = "skip",
+    showlegend = FALSE,
+    marker = list(colors = c("#8E0000", "#E57373"), line = list(color = "#8E0000", width = 1))
+  ) %>%
+  # --- EGRESOS: cara superior ---
+  add_pie(
+    data = df_egr_torta,
+    labels = ~Bloque,
+    values = ~Egreso,
+    name = "Egresos",
+    domain = list(x = c(0.34, 0.64), y = c(0.18, 0.88)),
+    hole = 0.42,
+    sort = FALSE,
+    textinfo = "label+percent",
+    textposition = "inside",
+    insidetextfont = list(color = "#111111", size = 12),
+    hovertext = ~hover_torta,
+    hoverinfo = "text",
+    showlegend = FALSE,
+    marker = list(colors = c("#C62828", "#EF9A9A"), line = list(color = "#FFFFFF", width = 2))
+  )
+
+# 4. Combinar tortas (izquierda/centro) y barra de Saldo Neto (derecha)
+fig_final <- subplot(
+  fig_3d_tortas,
+  fig_neto,
+  nrows = 1,
+  widths = c(0.66, 0.34),
+  titleX = TRUE,
+  margin = 0.04
+) %>%
+  layout(
+    title = list(text = "Composición 3D y Saldo Neto (Ingresos - Egresos) — Febrero 2026"),
+    annotations = list(
+      list(
+        text = paste0("<b>Ingresos Generales</b><br>(", comma(total_ing, accuracy = 0.01), ")"),
+        x = 0.10, y = 0.96, xref = "paper", yref = "paper",
+        showarrow = FALSE, font = list(size = 12)
+      ),
+      list(
+        text = paste0("<b>Egresos Generales</b><br>(", comma(total_egr, accuracy = 0.01), ")"),
+        x = 0.32, y = 0.96, xref = "paper", yref = "paper",
+        showarrow = FALSE, font = list(size = 12)
+      )
+    ),
+    hoverlabel = list(align = "left")
+  )
+
+fig_final
+```
+
+## INGRESOS POR BANCO SEMANAL (CUENTA EN \$)
+
+```{r}
+
+#| echo: false
+#| message: false
+#| warning: false
+
+ruta_excel <- "C:\\Users\\egutierrezr\\Documents\\dashboard_R\\dashboard_quarto\\Disponibilidad_Bancaria_Febrero_2026.xlsx"
+hojas_objetivo <- c("BANCOS", "BANCOS_Bs_$")
+cols_f_aj <- 6:36 # Columna F (6) hasta AJ (36)
+
+extraer_ingresos_f_aj <- function(hoja) {
+  raw_tbl <- read_excel(ruta_excel, sheet = hoja, col_names = FALSE)
+  
+  # Fila 1 contiene SEMANA 1..5 en F:AJ
+  semanas_vec <- as.character(unlist(raw_tbl[1, cols_f_aj]))
+  
+  # Ubicar filas donde la columna 4 (D) sea "Total Ingresos Generales"
+  idx_filas <- which(
+    !is.na(raw_tbl[[4]]) &
+      tolower(trimws(as.character(raw_tbl[[4]]))) == "total ingresos generales"
+  )
+  
+  map_dfr(idx_filas, function(r) {
+    banco_nombre <- trimws(as.character(raw_tbl[[1]][r]))
+    valores_num <- suppressWarnings(as.numeric(unlist(raw_tbl[r, cols_f_aj])))
+    valores_num[is.na(valores_num)] <- 0
+    
+    tibble(
+      Hoja = hoja,
+      Fila = r,
+      Rango = paste0("F", r, ":AJ", r),
+      Banco = banco_nombre,
+      Orden_Col = seq_along(cols_f_aj),
+      Columna = colnames(raw_tbl)[cols_f_aj],
+      Semana = semanas_vec,
+      Monto = valores_num
+    )
+  })
+}
+
+df_dispersion <- map_dfr(hojas_objetivo, extraer_ingresos_f_aj) %>%
+  group_by(Hoja, Banco, Semana) %>%
+  mutate(Acumulado_Semanal = cumsum(Monto)) %>%
+  ungroup()
+
+graficar_dispersion_hoja <- function(df, hoja_sel, usar_acumulado = FALSE) {
+  d <- df %>%
+    filter(Hoja == hoja_sel) %>%
+    mutate(
+      y_val = if (usar_acumulado) Acumulado_Semanal else Monto,
+      tooltip_txt = paste0(
+        "<b>Banco:</b> ", Banco, " (", Rango, ")",
+        "<br><b>Semana:</b> ", Semana,
+        "<br><b>Columna:</b> ", Columna,
+        "<br><b>Monto diario:</b> ", comma(Monto, accuracy = 0.01),
+        "<br><b>Acumulado semana:</b> ", comma(Acumulado_Semanal, accuracy = 0.01)
+      )
+    )
+  
+  p <- ggplot(d, aes(x = Orden_Col, y = y_val, color = Banco, group = Banco, text = tooltip_txt)) +
+    geom_line(alpha = 0.65, linewidth = 0.7) +
+    geom_point(size = 2.2, alpha = 0.9) +
+    facet_wrap(~ Semana, scales = "free_x", nrow = 1) +
+    scale_x_continuous(
+      breaks = unique(d$Orden_Col),
+      labels = unique(d$Columna)
+    ) +
+    scale_y_continuous(labels = comma) +
+    labs(
+      title = paste0(
+        if (usar_acumulado) "Avance acumulado semanal" else "Dispersión diaria",
+        " — Total Ingresos Generales  | ", hoja_sel
+      ),
+      x = "Columnas (F a AJ)",
+      y = if (usar_acumulado) "Monto acumulado en la semana" else "Monto (Total Ingresos Generales)",
+      color = "Cuenta / Banco"
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 7),
+      panel.spacing = unit(0.6, "lines")
+    )
+  
+  ggplotly(p, tooltip = "text") %>%
+    layout(hoverlabel = list(align = "left"))
+}
+
+# Gráficos interactivos por hoja (cambia usar_acumulado = TRUE para ver el avance acumulado en la semana)
+graficar_dispersion_hoja(df_dispersion, "BANCOS", usar_acumulado = FALSE)
+```
+
+## INGRESOS POR BANCO SEMANAL (CUENTA EN Bs/\$)
+
+```{r}
+graficar_dispersion_hoja(df_dispersion, "BANCOS_Bs_$", usar_acumulado = FALSE)
+```
+
+## EGRESOS POR BANCO SEMANAL (CUENTA EN \$)
+
+```{r}
+
+#| echo: false
+#| message: false
+#| warning: false
+
+############################ egreso
+############################ 
+############################ 
+############################ 
+
+
+
+ruta_excel <- "C:\\Users\\egutierrezr\\Documents\\dashboard_R\\dashboard_quarto\\Disponibilidad_Bancaria_Febrero_2026.xlsx"
+hojas_objetivo <- c("BANCOS", "BANCOS_Bs_$")
+cols_f_aj <- 6:36 # Columna F (6) hasta AJ (36)
+
+extraer_egresos_f_aj <- function(hoja) {
+  raw_tbl <- read_excel(ruta_excel, sheet = hoja, col_names = FALSE)
+  
+  # Fila 1 contiene SEMANA 1..5 en F:AJ
+  semanas_vec <- as.character(unlist(raw_tbl[1, cols_f_aj]))
+  
+  # Ubicar filas donde la columna 4 (D) sea "Total Egresos Generales"
+  idx_filas <- which(
+    !is.na(raw_tbl[[4]]) &
+      tolower(trimws(as.character(raw_tbl[[4]]))) == "total egresos generales"
+  )
+  
+  map_dfr(idx_filas, function(r) {
+    banco_nombre <- trimws(as.character(raw_tbl[[1]][r]))
+    valores_num <- suppressWarnings(as.numeric(unlist(raw_tbl[r, cols_f_aj])))
+    valores_num[is.na(valores_num)] <- 0
+    
+    tibble(
+      Hoja = hoja,
+      Fila = r,
+      Rango = paste0("F", r, ":AJ", r),
+      Banco = banco_nombre,
+      Orden_Col = seq_along(cols_f_aj),
+      Columna = colnames(raw_tbl)[cols_f_aj],
+      Semana = factor(semanas_vec, levels = unique(semanas_vec)),
+      Monto = valores_num
+    )
+  })
+}
+
+df_dispersion_egresos <- map_dfr(hojas_objetivo, extraer_egresos_f_aj) %>%
+  group_by(Hoja, Banco, Semana) %>%
+  mutate(Acumulado_Semanal = cumsum(Monto)) %>%
+  ungroup()
+
+graficar_dispersion_hoja <- function(df, hoja_sel, usar_acumulado = FALSE) {
+  d <- df %>%
+    filter(Hoja == hoja_sel) %>%
+    mutate(
+      y_val = if (usar_acumulado) Acumulado_Semanal else Monto,
+      tooltip_txt = paste0(
+        "<b>Banco:</b> ", Banco, " (", Rango, ")",
+        "<br><b>Semana:</b> ", Semana,
+        "<br><b>Columna:</b> ", Columna,
+        "<br><b>Egreso diario:</b> ", comma(Monto, accuracy = 0.01),
+        "<br><b>Acumulado semana:</b> ", comma(Acumulado_Semanal, accuracy = 0.01)
+      )
+    )
+  
+  p <- ggplot(d, aes(x = Orden_Col, y = y_val, color = Banco, group = Banco, text = tooltip_txt)) +
+    geom_line(alpha = 0.65, linewidth = 0.7) +
+    geom_point(size = 2.2, alpha = 0.9) +
+    facet_wrap(~ Semana, scales = "free_x", nrow = 1) +
+    scale_x_continuous(
+      breaks = unique(d$Orden_Col),
+      labels = unique(d$Columna)
+    ) +
+    scale_y_continuous(labels = comma) +
+    labs(
+      title = paste0(
+        if (usar_acumulado) "Avance acumulado semanal" else "Dispersión diaria",
+        " — Total Egresos Generales | ", hoja_sel
+      ),
+      x = "Columnas (F a AJ)",
+      y = if (usar_acumulado) "Egreso acumulado en la semana" else "Monto (Total Egresos Generales)",
+      color = "Cuenta / Banco"
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 7),
+      panel.spacing = unit(0.6, "lines")
+    )
+  
+  ggplotly(p, tooltip = "text") %>%
+    layout(hoverlabel = list(align = "left"))
+}
+
+# Gráficos interactivos por hoja (cambia usar_acumulado = TRUE para ver el acumulado semanal)
+graficar_dispersion_hoja(df_dispersion_egresos, "BANCOS", usar_acumulado = FALSE)
+```
+
+## EGRESOS POR BANCO SEMANAL (CUENTA EN Bs/\$)
+
+```{r}
+graficar_dispersion_hoja(df_dispersion_egresos, "BANCOS_Bs_$", usar_acumulado = FALSE)
+```
